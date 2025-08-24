@@ -60,6 +60,8 @@ class TransformData(beam.DoFn):
                     row[k] = int(v)
                 elif self.schema['properties'][k]['type'] == 'string':
                     row[k] = str(v)
+                elif self.schema['properties'][k]['type'] == 'number':
+                    row[k] = float(v)
                 else:
                     row[k] = v
             

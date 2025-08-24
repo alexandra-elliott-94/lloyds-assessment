@@ -70,4 +70,28 @@ resource "google_bigquery_table" "customers_invalid" {
   }
 }
 
+resource "google_bigquery_table" "transactions" {
+  dataset_id = google_bigquery_dataset.data_landing.dataset_id
+  table_id   = "transactions"
+  friendly_name = "Transactions Table"
+  description   = "Table to hold transactions data"
 
+  schema = file("./../schemas/transactions/transactions_bq.json")
+  deletion_protection = false
+  labels = {
+    env = "default"
+  }
+}
+
+resource "google_bigquery_table" "transactions_invalid" {
+  dataset_id = google_bigquery_dataset.invalid_data_landing.dataset_id
+  table_id   = "transactions"
+  friendly_name = "Transactions Invalid Table"
+  description   = "Table to hold invalid rows from transactions data"
+
+  schema = file("./../schemas/invalid.json")
+  deletion_protection = false
+  labels = {
+    env = "default"
+  }
+}

@@ -1,0 +1,26 @@
+{
+    "type": "object",
+    "properties": {
+        "cust_id": {
+            "type": "integer"
+        },
+        "first_name": {
+            "type": "string"
+        },
+        "last_name": {
+            "type": "string"
+        },
+        "amount": {
+            "type": "number"
+        },
+        "dt": {
+            "type": "string"
+        }
+    },
+    "required_fields": [
+        "cust_id",
+        "first_name",
+        "last_name",
+        "dt"
+    ]
+}

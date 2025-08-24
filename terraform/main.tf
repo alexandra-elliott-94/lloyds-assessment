@@ -2,20 +2,24 @@ resource "google_storage_bucket" "data-landing" {
  name          = "${var.project_id}-data-landing"
  location      = "EU"
  storage_class = "STANDARD"
+ force_destroy = true
 
  uniform_bucket_level_access = true
+ 
  }
 
  resource "google_storage_bucket" "dataflow_bucket" {
   name          = "${var.project_id}-dataflow-bucket"
   location      = "EU"
   storage_class = "STANDARD"
+  force_destroy = true
 
   uniform_bucket_level_access = true
   soft_delete_policy {
     retention_duration_seconds = 0
   }
   
+
 }
 
 resource "google_bigquery_dataset" "data_landing" {
@@ -60,7 +64,7 @@ resource "google_bigquery_table" "customers_invalid" {
   description   = "Table to hold invalid rows from customers data"
 
   schema = file("./../schemas/invalid.json")
-
+  deletion_protection = false
   labels = {
     env = "default"
   }

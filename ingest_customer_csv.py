@@ -7,53 +7,32 @@ import json
 from apache_beam.pvalue import TaggedOutput
 from datetime import datetime
 import jsonschema
+from apache_beam.io.filesystems import FileSystems
+
+def parse_schema(json_path: str):
+    """Parse schema from a JSON file in GCS."""
+    with FileSystems.open(f"gs://natural-pipe-469020-h2-dataflow-bucket/{json_path}") as f:
+        print(f)
+        schema = json.loads(f.read())
+    return schema
 
 class TransformData(beam.DoFn):
-    """A helper class which contains the logic to translate the file into
-    a format BigQuery will accept."""
+    """A helper class to transform CSV rows to BigQuery rows."""
+    def __init__(self, schema):
+        self.schema = schema
 
     def process(self, string_input):
+        """Translates a line of comma separated values to a
+        dictionary which can be loaded into BigQuery.
 
+        Args:
+            string_input: A comma separated list of values
 
-
-        schema = {
-                    "type": "object",
-                    "properties": {
-                        "first_name": {
-                            "type": "string"
-                        },
-                        "last_name": {
-                            "type": "string"
-                        },
-                        "phone_number": {
-                            "type": "string"
-                        },
-                        "email": {
-                            "type": "string"
-                        },
-                        "address": {
-                            "type": "string"
-                        },
-                        "post_code": {
-                            "type": "string"
-                        },
-                        "country": {
-                            "type": "string"
-                        },
-                        "customer_id": {
-                            "type": "integer"
-                        }
-                    },
-                    "required_fields": [
-                        "first_name",
-                        "last_name",
-                        "email",
-                        "address",
-                        "country",
-                        "customer_id"
-                    ]
-        }
-
+        Returns:
+            A dictionary where each key is a BigQuery column name and
+              each value is the parsed result from string_input.
+         """
+      
         try:
             logging.info(f"Processing row: {string_input}")
             string_input = re.sub('"', '', string_input)
@@ -61,7 +40,7 @@ class TransformData(beam.DoFn):
             values = re.split(",", string_input)
             
             columns = []
-            for value in schema['properties']:
+            for value in self.schema['properties']:
                 columns.append(value)
 
             logging.info(columns)
@@ -73,18 +52,18 @@ class TransformData(beam.DoFn):
 
             for k, v in row.items():
                 if not v:
-                    if k in schema['required_fields']:
+                    if k in self.schema['required_fields']:
                         raise ValueError(f"Missing required field: {k}")
                     else:
                         v = None
-                elif schema['properties'][k]['type'] == 'integer':
+                elif self.schema['properties'][k]['type'] == 'integer':
                     row[k] = int(v)
-                elif schema['properties'][k]['type'] == 'string':
+                elif self.schema['properties'][k]['type'] == 'string':
                     row[k] = str(v)
                 else:
                     row[k] = v
             
-            jsonschema.validate(instance=json.loads(json.dumps(row)), schema=schema)
+            jsonschema.validate(instance=json.loads(json.dumps(row)), schema=self.schema)
 
             row['ingestion_timestamp'] =  datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -97,7 +76,7 @@ class TransformData(beam.DoFn):
 
 
 def run(argv=None):
-
+    """Main entry point; defines and runs the pipeline."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset',
                         dest='dataset',
@@ -117,11 +96,15 @@ def run(argv=None):
 
     known_args, pipeline_args = parser.parse_known_args(argv)
 
+    schema = parse_schema(f"schemas/{known_args.table}/{known_args.table}.json")
+    print(schema)
+
     p = beam.Pipeline(options=PipelineOptions(pipeline_args))
+
 
     valid, invalid = (p | 'Read from GCS' >> beam.io.ReadFromText(f"{known_args.source_file}",
                                                   skip_header_lines=1)
-        | 'Transform to BigQuery Row' >> beam.ParDo(TransformData()).with_outputs('valid', 'invalid'))
+        | 'Transform to BigQuery Row' >> beam.ParDo(TransformData(schema)).with_outputs('valid', 'invalid'))
     
     valid    | 'Write to valid rows to BigQuery' >> beam.io.WriteToBigQuery( 
                 f"natural-pipe-469020-h2:{known_args.dataset}.{known_args.table}",

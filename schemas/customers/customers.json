@@ -1,0 +1,37 @@
+{
+    "type": "object",
+    "properties": {
+        "first_name": {
+            "type": "string"
+        },
+        "last_name": {
+            "type": "string"
+        },
+        "phone_number": {
+            "type": "string"
+        },
+        "email": {
+            "type": "string"
+        },
+        "address": {
+            "type": "string"
+        },
+        "post_code": {
+            "type": "string"
+        },
+        "country": {
+            "type": "string"
+        },
+        "customer_id": {
+            "type": "integer"
+        }
+    },
+    "required_fields": [
+        "first_name",
+        "last_name",
+        "email",
+        "address",
+        "country",
+        "customer_id"
+    ]
+}

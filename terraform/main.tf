@@ -50,6 +50,8 @@ resource "google_bigquery_table" "customers" {
   friendly_name = "Customers Table"
   description   = "Table to hold customer data"
 
+  clustering = ["country"]
+
   schema = file("./../schemas/customers/customers_bq.json")
   deletion_protection = false
   labels = {
@@ -68,6 +70,10 @@ resource "google_bigquery_table" "customers_invalid" {
   labels = {
     env = "default"
   }
+  time_partitioning {
+    type          = "DAY"
+    field         = "ingestion_timestamp"
+  }
 }
 
 resource "google_bigquery_table" "transactions" {
@@ -81,6 +87,11 @@ resource "google_bigquery_table" "transactions" {
   labels = {
     env = "default"
   }
+  time_partitioning {
+    type          = "DAY"
+    field         = "dt"
+  }
+  clustering = ["cust_id"]
 }
 
 resource "google_bigquery_table" "transactions_invalid" {
@@ -93,5 +104,9 @@ resource "google_bigquery_table" "transactions_invalid" {
   deletion_protection = false
   labels = {
     env = "default"
+  }
+  time_partitioning {
+    type          = "DAY"
+    field         = "ingestion_timestamp"
   }
 }

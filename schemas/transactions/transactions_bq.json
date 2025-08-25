@@ -21,7 +21,7 @@
   },
   {
     "name": "dt",
-    "type": "STRING",
+    "type": "DATETIME",
     "mode": "REQUIRED"
   },
   {

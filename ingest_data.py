@@ -64,7 +64,7 @@ class TransformData(beam.DoFn):
                     row[k] = float(v)
                 else:
                     row[k] = v
-            
+
             jsonschema.validate(instance=json.loads(json.dumps(row)), schema=self.schema)
 
             row['ingestion_timestamp'] =  datetime.now().strftime('%Y-%m-%d %H:%M:%S')

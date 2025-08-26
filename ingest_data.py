@@ -1,12 +1,13 @@
 import argparse
 import logging
-import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions
 import re
 import json
-from apache_beam.pvalue import TaggedOutput
 from datetime import datetime
 import jsonschema
+
+import apache_beam as beam
+from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.pvalue import TaggedOutput
 from apache_beam.io.filesystems import FileSystems
 
 def parse_schema(json_path: str):
@@ -19,37 +20,38 @@ def parse_schema(json_path: str):
 class TransformData(beam.DoFn):
     """A helper class to transform CSV rows to BigQuery rows."""
     def __init__(self, schema):
+        super().__init__()
         self.schema = schema
+    
+    def to_runner_api_parameter(self, unused_context):
+    
+        raise NotImplementedError("to_runner_api_parameter is not implemented.")
 
-    def process(self, string_input):
+    def process(self, element):
         """Translates a line of comma separated values to a
         dictionary which can be loaded into BigQuery.
 
         Args:
-            string_input: A comma separated list of values
-
+            element: A comma separated list of values
         Returns:
             A dictionary where each key is a BigQuery column name and
-              each value is the parsed result from string_input.
+              each value is the parsed result from element.
          """
       
         try:
-            logging.info(f"Processing row: {string_input}")
-            string_input = re.sub('"', '', string_input)
-            string_input = re.sub('\r\n', '', string_input)
-            values = re.split(",", string_input)
+            logging.info("Processing row: %s", element)
+            element = re.sub('"', '', element)
+            element = re.sub('\r\n', '', element)
+            values = re.split(",", element)
             
             columns = []
             for value in self.schema['properties']:
                 columns.append(value)
 
-            logging.info(columns)
-
             row = dict(
                 zip(columns,
                     values))
-            logging.info(f"Transformed row: {row}")
-
+            
             for k, v in row.items():
                 if not v:
                     if k in self.schema['required_fields']:
@@ -66,16 +68,14 @@ class TransformData(beam.DoFn):
                     row[k] = v
 
             jsonschema.validate(instance=json.loads(json.dumps(row)), schema=self.schema)
-
             row['ingestion_timestamp'] =  datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
             yield TaggedOutput('valid', row)
+
         except Exception as e: 
-            logging.error(f"Error parsing row: {string_input}, error: {e}")
-            row = {'row': string_input, 'error': str(e), 'ingestion_timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            logging.error("Error parsing row:  %s, error %s", element, e)
+            row = {'row': element, 'error': str(e),
+                    'ingestion_timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             yield TaggedOutput('invalid', row)
-
-
 
 def run(argv=None):
     """Main entry point; defines and runs the pipeline."""
@@ -106,9 +106,9 @@ def run(argv=None):
 
     valid, invalid = (p | 'Read from GCS' >> beam.io.ReadFromText(f"{known_args.source_file}",
                                                   skip_header_lines=1)
-        | 'Transform to BigQuery Row' >> beam.ParDo(TransformData(schema)).with_outputs('valid', 'invalid'))
-    
-    valid    | 'Write to valid rows to BigQuery' >> beam.io.WriteToBigQuery( 
+        | 'Transform to BigQuery Row' >> beam.ParDo(TransformData(schema)).with_outputs('valid',
+                                                                                         'invalid'))
+    valid    | 'Write to valid rows to BigQuery' >> beam.io.WriteToBigQuery(
                 f"natural-pipe-469020-h2:{known_args.dataset}.{known_args.table}",
                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND
         )
@@ -125,6 +125,3 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
 
     run()
-
-
-

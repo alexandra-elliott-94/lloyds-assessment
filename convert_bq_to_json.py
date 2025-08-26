@@ -25,14 +25,15 @@ def convert_bq_to_json(bq):
     json_schema['required_fields'] = []
     bq = json.loads(bq)
     for field in bq:
+        if field['mode'] == 'REQUIRED':
+                json_schema['required_fields'].append(field['name'])
         if field['type'] == 'DATETIME':
             json_schema['properties'][field['name']] = {'type': 'string'}
-        if field['type'] == 'NUMERIC':
+        elif field['type'] == 'NUMERIC':
             json_schema['properties'][field['name']] = {'type': 'number'}
-        elif field['name'] != 'ingestion_timestamp':
+        else:
             json_schema['properties'][field['name']] = {'type': field['type'].lower()}
-            if field['mode'] == 'REQUIRED':
-                json_schema['required_fields'].append(field['name'])
+
     return json_schema
 
 

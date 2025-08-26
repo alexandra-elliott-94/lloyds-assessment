@@ -15,12 +15,16 @@
         },
         "dt": {
             "type": "string"
+        },
+        "ingestion_timestamp": {
+            "type": "string"
         }
     },
     "required_fields": [
         "cust_id",
         "first_name",
         "last_name",
-        "dt"
+        "dt",
+        "ingestion_timestamp"
     ]
 }

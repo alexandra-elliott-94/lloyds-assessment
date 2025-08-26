@@ -133,15 +133,3 @@ resource "google_bigquery_table" "lifetime_value_view" {
     use_legacy_sql = false
   }
 }
-
-
-resource "google_service_account" "dataflow_service_account" {
-  account_id   = "dataflow-service-account-id"
-  display_name = "Dataflow Service Account"
-}
-
-resource "google_service_account_iam_binding" "admin-account-iam" {
-  service_account_id = google_service_account.dataflow_service_account.name
-  role               = "roles/dataflow.serviceAgent"
-  members            = ["serviceAccount:${google_service_account.dataflow_service_account.account_id}@${var.project_id}.iam.gserviceaccount.com"]
-}

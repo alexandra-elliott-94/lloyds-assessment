@@ -24,6 +24,9 @@
         },
         "customer_id": {
             "type": "integer"
+        },
+        "ingestion_timestamp": {
+            "type": "string"
         }
     },
     "required_fields": [

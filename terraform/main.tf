@@ -110,3 +110,27 @@ resource "google_bigquery_table" "transactions_invalid" {
     field         = "ingestion_timestamp"
   }
 }
+
+resource "google_bigquery_table" "monthly_average_spend_view" {
+  dataset_id = google_bigquery_dataset.data_landing.dataset_id
+  table_id   = "monthly_average_spend_view"
+  friendly_name = "Monthly Average Spend View"
+  description   = "View to show monthly average spend per customer"
+
+  materialized_view {
+    query = file("./../views/monthly_average.sql")
+  }
+}
+
+resource "google_bigquery_table" "lifetime_value_view_view" {
+  dataset_id = google_bigquery_dataset.data_landing.dataset_id
+  table_id   = "lifetime_value_view"
+  friendly_name = "Lifetime Value View"
+  description   = "View to show lifetime value per customer"
+
+  view {
+    query = file("./../views/lifetime_value.sql")
+    use_legacy_sql = false
+  }
+}
+
